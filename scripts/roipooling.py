@@ -193,7 +193,6 @@ def obtainInOut (pathImg, pathJson):
         roiss_np = rectarr
         #print(f"roiss_np.shape = {roiss_np.shape}")# Create layer
         roi_layer = ROIPoolingLayer(pooled_height, pooled_width)
-        pooled_features = roi_layer([feature_maps_tf, roiss_tf])
         #print(f"output shape of layer call = {pooled_features.shape}")# Run tensorflow session
         result = roi_layer([feature_maps_np, roiss_np])
         Xout.append(result[0,:,:,:,:])
