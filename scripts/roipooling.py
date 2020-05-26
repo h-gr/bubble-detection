@@ -2,6 +2,7 @@ import tensorflow as tf
 from tensorflow.keras.layers import Layer
 
 
+
 class ROIPoolingLayer(Layer):
     """ Implements Region Of Interest Max Pooling 
         for channel-first images and relative bounding box coordinates
@@ -126,7 +127,12 @@ class ROIPoolingLayer(Layer):
         pooled_features = tf.stack([[pool_area(x) for x in row] for row in areas])
         return pooled_features
 
+import numpy as np# Define parameters
+from PIL import Image
+import tensorflow.compat.v1 as tf
 
+import os
+tf.disable_v2_behavior()
 def obtainInOut (pathImg, pathJson):
   Xout = []
   Xcoordout = []
