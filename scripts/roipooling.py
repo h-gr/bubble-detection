@@ -145,7 +145,7 @@ def obtainInOut (pathImg, pathJson):
   Yout = []
   arr = os.listdir(pathImg)
   for fi in arr:
-      if(fi.__contains__(".png")):
+      if("png" in fi):
         inputImg=Image.open(pathImg + fi)
         dic = loadjson(pathJson)
         reg = dic[fi]
