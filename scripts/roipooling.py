@@ -137,9 +137,9 @@ def loadjson(path):
 import numpy as np# Define parameters
 from PIL import Image
 import tensorflow.compat.v1 as tf
-
 import os
-tf.disable_v2_behavior()
+
+#tf.disable_v2_behavior()
 def obtainInOut (pathImg, pathJson):
   Xout = []
   Xcoordout = []
@@ -153,7 +153,6 @@ def obtainInOut (pathImg, pathJson):
         #dic = loadjson('/content/result.json')
         #reg = dic['frame181.png']
         reg = dic[fi]
-        print(reg)
         #converting rois
         rect = []
         circ = []
@@ -193,13 +192,13 @@ def obtainInOut (pathImg, pathJson):
         feature_maps_shape = (batch_size, img_height, img_width, n_channels)
         feature_maps_tf = tf.placeholder(tf.float32, shape=feature_maps_shape)
         feature_maps_np = np.asarray([np.asarray(inputImg)])
-        print(f"feature_maps_np.shape = {feature_maps_np.shape}")# Create batch size
+        #print(f"feature_maps_np.shape = {feature_maps_np.shape}")# Create batch size
         roiss_tf = tf.placeholder(tf.float32, shape=(batch_size, n_rois, 4))
         roiss_np = rectarr
-        print(f"roiss_np.shape = {roiss_np.shape}")# Create layer
+        #print(f"roiss_np.shape = {roiss_np.shape}")# Create layer
         roi_layer = ROIPoolingLayer(pooled_height, pooled_width)
         pooled_features = roi_layer([feature_maps_tf, roiss_tf])
-        print(f"output shape of layer call = {pooled_features.shape}")# Run tensorflow session
+        #print(f"output shape of layer call = {pooled_features.shape}")# Run tensorflow session
         with tf.Session() as session:
             result = session.run(pooled_features, 
                                 feed_dict={feature_maps_tf:feature_maps_np,  
