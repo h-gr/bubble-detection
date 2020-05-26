@@ -2,7 +2,6 @@ import tensorflow as tf
 from tensorflow.keras.layers import Layer
 
 
-
 class ROIPoolingLayer(Layer):
     """ Implements Region Of Interest Max Pooling 
         for channel-first images and relative bounding box coordinates
@@ -136,7 +135,7 @@ def loadjson(path):
 
 import numpy as np# Define parameters
 from PIL import Image
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 import os
 
 #tf.disable_v2_behavior()
@@ -148,10 +147,7 @@ def obtainInOut (pathImg, pathJson):
   for fi in arr:
       if(fi.__contains__(".png")):
         inputImg=Image.open(pathImg + "/" + fi)
-        #inputImg=Image.open("/content/frame181.png")
         dic = loadjson(pathJson)
-        #dic = loadjson('/content/result.json')
-        #reg = dic['frame181.png']
         reg = dic[fi]
         #converting rois
         rect = []
@@ -190,19 +186,16 @@ def obtainInOut (pathImg, pathJson):
         pooled_height = 10
         pooled_width = 10# Create feature map input
         feature_maps_shape = (batch_size, img_height, img_width, n_channels)
-        feature_maps_tf = tf.placeholder(tf.float32, shape=feature_maps_shape)
-        feature_maps_np = np.asarray([np.asarray(inputImg)])
+        
+        feature_maps_np = np.asarray([np.asarray(inputImg)],dtype='float32')
         #print(f"feature_maps_np.shape = {feature_maps_np.shape}")# Create batch size
-        roiss_tf = tf.placeholder(tf.float32, shape=(batch_size, n_rois, 4))
+        
         roiss_np = rectarr
         #print(f"roiss_np.shape = {roiss_np.shape}")# Create layer
         roi_layer = ROIPoolingLayer(pooled_height, pooled_width)
         pooled_features = roi_layer([feature_maps_tf, roiss_tf])
         #print(f"output shape of layer call = {pooled_features.shape}")# Run tensorflow session
-        with tf.Session() as session:
-            result = session.run(pooled_features, 
-                                feed_dict={feature_maps_tf:feature_maps_np,  
-                                            roiss_tf:roiss_np})
+        result = roi_layer([feature_maps_np, roiss_np])
         Xout.append(result[0,:,:,:,:])
 
         # print(f"result.shape = {result.shape}")
