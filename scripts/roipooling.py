@@ -126,6 +126,13 @@ class ROIPoolingLayer(Layer):
         
         pooled_features = tf.stack([[pool_area(x) for x in row] for row in areas])
         return pooled_features
+        
+import json
+def loadjson(path):
+    with open(path, 'r') as f:
+        distros_dict = json.load(f)
+    return distros_dict
+
 
 import numpy as np# Define parameters
 from PIL import Image
