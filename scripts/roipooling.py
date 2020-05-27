@@ -164,7 +164,7 @@ def obtainROI(img, result):
     feature_maps_np = np.asarray([np.asarray(inputImg)],dtype='float32')
     
     roiss_np = results/128
-    roi_layer = roi.ROIPoolingLayer(pooled_height, pooled_width)
+    roi_layer = ROIPoolingLayer(pooled_height, pooled_width)
     result = roi_layer([feature_maps_np, roiss_np])
     Xout = np.concatenate( result, axis=0 )
     return Xout, resulta
