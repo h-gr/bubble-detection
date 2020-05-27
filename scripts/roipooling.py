@@ -139,6 +139,38 @@ import tensorflow as tf
 import os
 
 #tf.disable_v2_behavior()
+
+def obtainROI(img, result):
+    inputImg=Image.open(img)
+    result = result[0]
+    result = result[result[:,4]>0.95]
+    result = result[:,:4]
+    inx = [1,0,3,2]
+    result = result[:,inx]
+
+    resulta = np.array(result)
+    results = np.array([result])
+
+    #compute ROIs
+    batch_size = 1
+    img_height = 128
+    img_width = 128
+    n_channels = 3
+    n_rois = len(results[0])
+    pooled_height = 10
+    pooled_width = 10# Create feature map input
+    feature_maps_shape = (batch_size, img_height, img_width, n_channels)
+    
+    feature_maps_np = np.asarray([np.asarray(inputImg)],dtype='float32')
+    
+    roiss_np = results/128
+    roi_layer = roi.ROIPoolingLayer(pooled_height, pooled_width)
+    result = roi_layer([feature_maps_np, roiss_np])
+    Xout = np.concatenate( result, axis=0 )
+    return Xout, resulta
+    
+
+
 def obtainInOut (pathImg, pathJson):
   Xout = []
   Xcoordout = []
