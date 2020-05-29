@@ -169,6 +169,24 @@ def obtainROI(img, result):
     result = roi_layer([feature_maps_np, roiss_np])
     Xout = np.concatenate( result, axis=0 )
     return Xout, resulta
+
+def obtainROICrop(img, result):
+    inputImg=Image.open(img)
+    result = result[0]
+    result = result[result[:,4]>0.95]
+    result = result[:,:4]
+    inx = [1,0,3,2]
+    result = result[:,inx]
+
+    resulta = np.array(result)
+    Xout = []
+    for res in result:
+        im1 = inputImg.crop((result[1], result[0], result[3], result[2])) 
+        new_size = (10,10)
+        im1 = im1.resize(new_size)
+        Xout.append([np.asarray(im1)])
+    Xout = np.concatenate( Xout, axis=0 )
+    return Xout, resulta
     
 
 from math import sin, cos, radians
@@ -198,146 +216,99 @@ def obtainInOut (pathImg, pathJson):
         print(fi)
         for angle in [0,90]:
             for flip in ['n','h','v','hv']:
-                    inputImg=Image.open(pathImg + fi)
-                    inputImg = inputImg.rotate(angle)
-                    if('v' in flip):
-                        inputImg = ImageOps.flip(inputImg)
-                    if('h' in flip):
-                        inputImg = ImageOps.mirror(inputImg)
-                    inputImg.save('{}'.format(str(angle)+'_'+flip+'_'+fi)) 
-                    dic = loadjson(pathJson)
-                    reg = dic[fi]
-                    #converting rois
-                    rect = []
-                    circ = []
-                    for r in reg:
-                      rtgd = r['rectangular']
-                      xmin = rtgd['x']
-                      xmax = rtgd['x']+rtgd['width']
-                      ymin = rtgd['y']
-                      ymax = rtgd['y']+rtgd['height']
-                      coordpre = np.asarray([ymin,xmin,ymax,xmax], dtype='float32')
-                      #print("before aug")
-                      #data augmentation
-                      (xmin,ymin) = rotate_point((xmin, ymin), -angle, (64, 64))
-                      (xmax,ymax) = rotate_point((xmax, ymax), -angle, (64, 64))
-                      if('h' in flip):
-                        xmin = 128 - xmin
-                        xmax = 128 - xmax
-                      if('v' in flip):
-                        ymin = 128 - ymin
-                        ymax = 128 - ymax
-                      if(xmin>xmax):
-                        aux = xmin
-                        xmin = xmax
-                        xmax= aux
-                      if(ymin>ymax):
-                        aux = ymin
-                        ymin = ymax
-                        ymax= aux
-                      xmin = int(np.abs(xmin))
-                      xmax = int(np.abs(xmax))
-                      ymin = int(np.abs(ymin))
-                      ymax = int(np.abs(ymax))
-                      coord = np.asarray([ymin,xmin,ymax,xmax], dtype='float32')
-                      
-                      
-                      #print("after aug")
-                      rect.append(coord/128)
+                inputImg=Image.open(pathImg + fi)
+                inputImg = inputImg.rotate(angle)
+                if('v' in flip):
+                    inputImg = ImageOps.flip(inputImg)
+                if('h' in flip):
+                    inputImg = ImageOps.mirror(inputImg)
+                #inputImg.save('{}'.format(str(angle)+'_'+flip+'_'+fi)) 
+                dic = loadjson(pathJson)
+                reg = dic[fi]
+                #converting rois
+                rect = []
+                circ = []
+                for r in reg:
+                  rtgd = r['rectangular']
+                  xmin = rtgd['x']
+                  xmax = rtgd['x']+rtgd['width']
+                  ymin = rtgd['y']
+                  ymax = rtgd['y']+rtgd['height']
+                  coordpre = np.asarray([ymin,xmin,ymax,xmax], dtype='float32')
+                  #print("before aug")
+                  #data augmentation
+                  (xmin,ymin) = rotate_point((xmin, ymin), -angle, (64, 64))
+                  (xmax,ymax) = rotate_point((xmax, ymax), -angle, (64, 64))
+                  if('h' in flip):
+                    xmin = 128 - xmin
+                    xmax = 128 - xmax
+                  if('v' in flip):
+                    ymin = 128 - ymin
+                    ymax = 128 - ymax
+                  if(xmin>xmax):
+                    aux = xmin
+                    xmin = xmax
+                    xmax= aux
+                  if(ymin>ymax):
+                    aux = ymin
+                    ymin = ymax
+                    ymax= aux
+                  xmin = int(np.abs(xmin))
+                  xmax = int(np.abs(xmax))
+                  ymin = int(np.abs(ymin))
+                  ymax = int(np.abs(ymax))
+                  coord = np.asarray([ymin,xmin,ymax,xmax], dtype='float32')
+                  
+                  
+                  #print("after aug")
+                  rect.append(coord/128)
 
-                      crcd = r['circular']
-                      xc=crcd['cx']
-                      yc=crcd['cy']
-                      r=crcd['r']
-                      (xc,yc) = rotate_point((xc, yc), -angle, (64, 64))
-                      if('h' in flip):
-                        xc = 128 - xc
-                      if('v' in flip):
-                        yc = 128 - yc
-                      coordc = np.asarray([xc,yc,r], dtype='float32')
-                      circ.append(coordc)
-                      
-                      im1 = inputImg.crop((xmin, ymin, xmax, ymax))
-                      # print(str(angle)+flip)
-                      # print(coordpre)
-                      # print(coord)
-                      im1.save('{}'.format(str(r)+'_'+str(angle)+'_'+flip+'_'+fi))    
-                    
-                    yresult = np.asarray(circ,dtype='float32')
-                    Yout.append(yresult)
+                  crcd = r['circular']
+                  xc=crcd['cx']
+                  yc=crcd['cy']
+                  r=crcd['r']
+                  (xc,yc) = rotate_point((xc, yc), -angle, (64, 64))
+                  if('h' in flip):
+                    xc = 128 - xc
+                  if('v' in flip):
+                    yc = 128 - yc
+                  coordc = np.asarray([xc,yc,r], dtype='float32')
+                  circ.append(coordc)
+                  
+                  im1 = inputImg.crop((xmin, ymin, xmax, ymax))
+                  # print(str(angle)+flip)
+                  # print(coordpre)
+                  # print(coord)
+                  #im1.save('{}'.format(str(r)+'_'+str(angle)+'_'+flip+'_'+fi))    
+                
+                yresult = np.asarray(circ,dtype='float32')
+                Yout.append(yresult)
 
-                    xresult = np.asarray(rect,dtype='float32')*128
-                    Xcoordout.append(xresult)
+                xresult = np.asarray(rect,dtype='float32')*128
+                Xcoordout.append(xresult)
 
-                    rectarr = np.asarray([rect],dtype='float32')
+                rectarr = np.asarray([rect],dtype='float32')
 
-                    #print(rectarr)
+                #print(rectarr)
 
-                    batch_size = 1
-                    img_height = 128
-                    img_width = 128
-                    n_channels = 3
-                    n_rois = len(reg)
-                    pooled_height = 10
-                    pooled_width = 10# Create feature map input
-                    feature_maps_shape = (batch_size, img_height, img_width, n_channels)
-                    
-                    feature_maps_np = np.asarray([np.asarray(inputImg)],dtype='float32')
-                    #print(f"feature_maps_np.shape = {feature_maps_np.shape}")# Create batch size
-                    
-                    roiss_np = rectarr
-                    #print(f"roiss_np.shape = {roiss_np.shape}")# Create layer
-                    roi_layer = ROIPoolingLayer(pooled_height, pooled_width)
-                    #print(f"output shape of layer call = {pooled_features.shape}")# Run tensorflow session
-                    result = roi_layer([feature_maps_np, roiss_np])
-                    Xout.append(result[0,:,:,:,:])
-
-  Xout = np.concatenate( Xout, axis=0 )
-  Yout = np.concatenate( Yout, axis=0 )
-  Xcoordout = np.concatenate( Xcoordout, axis=0 )
-  return Xout, Yout, Xcoordout
-  
-def obtainInOutCrop (pathImg, pathJson):
-  Xout = []
-  Xcoordout = []
-  Yout = []
-  arr = os.listdir(pathImg)
-  for fi in arr:
-      if("png" in fi):
-        inputImg=Image.open(pathImg + fi)
-        dic = loadjson(pathJson)
-        reg = dic[fi]
-        #converting rois
-        rect = []
-        circ = []
-        for r in reg:
-          rtgd = r['rectangular']
-          xmin = rtgd['x']
-          xmax = rtgd['x']+rtgd['width']
-          ymin = rtgd['y']
-          ymax = rtgd['y']+rtgd['height']
-          coord = np.asarray([ymin,xmin,ymax,xmax], dtype='float32')
-          rect.append(coord/128)
-
-          crcd = r['circular']
-          xc=crcd['cx']
-          yc=crcd['cy']
-          r=crcd['r']
-          coordc = np.asarray([xc,yc,r], dtype='float32')
-          circ.append(coordc)
-          
-          im1 = inputImg.crop((xmin, ymin, xmax, ymax)) 
-          # im1.save('crop{}.png'.format(fi))
-          new_size = (10,10)
-          im1 = im1.resize(new_size)
-          # im1.save('res{}.png'.format(fi))
-          Xout.append([np.asarray(im1)])
-
-        yresult = np.asarray(circ,dtype='float32')
-        Yout.append(yresult)
-
-        xresult = np.asarray(rect,dtype='float32')*128
-        Xcoordout.append(xresult)
+                batch_size = 1
+                img_height = 128
+                img_width = 128
+                n_channels = 3
+                n_rois = len(reg)
+                pooled_height = 10
+                pooled_width = 10# Create feature map input
+                feature_maps_shape = (batch_size, img_height, img_width, n_channels)
+                
+                feature_maps_np = np.asarray([np.asarray(inputImg)],dtype='float32')
+                #print(f"feature_maps_np.shape = {feature_maps_np.shape}")# Create batch size
+                
+                roiss_np = rectarr
+                #print(f"roiss_np.shape = {roiss_np.shape}")# Create layer
+                roi_layer = ROIPoolingLayer(pooled_height, pooled_width)
+                #print(f"output shape of layer call = {pooled_features.shape}")# Run tensorflow session
+                result = roi_layer([feature_maps_np, roiss_np])
+                Xout.append(result[0,:,:,:,:])
 
   Xout = np.concatenate( Xout, axis=0 )
   Yout = np.concatenate( Yout, axis=0 )
@@ -351,42 +322,78 @@ def obtainInOutCrop (pathImg, pathJson):
   arr = os.listdir(pathImg)
   for fi in arr:
       if("png" in fi):
-        inputImg=Image.open(pathImg + fi)
-        dic = loadjson(pathJson)
-        reg = dic[fi]
-        #converting rois
-        rect = []
-        circ = []
-        for r in reg:
-          rtgd = r['rectangular']
-          xmin = rtgd['x']
-          xmax = rtgd['x']+rtgd['width']
-          ymin = rtgd['y']
-          ymax = rtgd['y']+rtgd['height']
-          coord = np.asarray([ymin,xmin,ymax,xmax], dtype='float32')
-          rect.append(coord/128)
+        for angle in [0,90]:
+            for flip in ['n','h','v','hv']:
+                inputImg=Image.open(pathImg + fi)
+                inputImg = inputImg.rotate(angle)
+                if('v' in flip):
+                    inputImg = ImageOps.flip(inputImg)
+                if('h' in flip):
+                    inputImg = ImageOps.mirror(inputImg)
+                dic = loadjson(pathJson)
+                reg = dic[fi]
+                #converting rois
+                rect = []
+                circ = []
+                for r in reg:
+                  rtgd = r['rectangular']
+                  xmin = rtgd['x']
+                  xmax = rtgd['x']+rtgd['width']
+                  ymin = rtgd['y']
+                  ymax = rtgd['y']+rtgd['height']
+                  
+                  
+                  (xmin,ymin) = rotate_point((xmin, ymin), -angle, (64, 64))
+                  (xmax,ymax) = rotate_point((xmax, ymax), -angle, (64, 64))
+                  if('h' in flip):
+                    xmin = 128 - xmin
+                    xmax = 128 - xmax
+                  if('v' in flip):
+                    ymin = 128 - ymin
+                    ymax = 128 - ymax
+                  if(xmin>xmax):
+                    aux = xmin
+                    xmin = xmax
+                    xmax= aux
+                  if(ymin>ymax):
+                    aux = ymin
+                    ymin = ymax
+                    ymax= aux
+                  xmin = int(np.abs(xmin))
+                  xmax = int(np.abs(xmax))
+                  ymin = int(np.abs(ymin))
+                  ymax = int(np.abs(ymax))
+                  
+                  coord = np.asarray([ymin,xmin,ymax,xmax], dtype='float32')
+                  rect.append(coord/128)
 
-          crcd = r['circular']
-          xc=crcd['cx']
-          yc=crcd['cy']
-          r=crcd['r']
-          coordc = np.asarray([xc,yc,r], dtype='float32')
-          circ.append(coordc)
-          
-          im1 = inputImg.crop((xmin, ymin, xmax, ymax)) 
-          # im1.save('crop{}.png'.format(fi))
-          new_size = (10,10)
-          im1 = im1.resize(new_size)
-          # im1.save('res{}.png'.format(fi))
-          Xout.append([np.asarray(im1)])
+                  crcd = r['circular']
+                  xc=crcd['cx']
+                  yc=crcd['cy']
+                  r=crcd['r']
+                  (xc,yc) = rotate_point((xc, yc), -angle, (64, 64))
+                  if('h' in flip):
+                    xc = 128 - xc
+                  if('v' in flip):
+                    yc = 128 - yc
+                  coordc = np.asarray([xc,yc,r], dtype='float32')
+                  circ.append(coordc)
+                  
+                  im1 = inputImg.crop((xmin, ymin, xmax, ymax)) 
+                  # im1.save('crop{}.png'.format(fi))
+                  new_size = (10,10)
+                  im1 = im1.resize(new_size)
+                  # im1.save('res{}.png'.format(fi))
+                  Xout.append([np.asarray(im1)])
 
-        yresult = np.asarray(circ,dtype='float32')
-        Yout.append(yresult)
+                yresult = np.asarray(circ,dtype='float32')
+                Yout.append(yresult)
 
-        xresult = np.asarray(rect,dtype='float32')*128
-        Xcoordout.append(xresult)
+                xresult = np.asarray(rect,dtype='float32')*128
+                Xcoordout.append(xresult)
 
   Xout = np.concatenate( Xout, axis=0 )
   Yout = np.concatenate( Yout, axis=0 )
   Xcoordout = np.concatenate( Xcoordout, axis=0 )
   return Xout, Yout, Xcoordout
+  
