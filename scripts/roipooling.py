@@ -196,15 +196,15 @@ def obtainInOut (pathImg, pathJson):
   for fi in arr:
       if("png" in fi):
         inputImg=Image.open(pathImg + fi)
+        print(fi)
         for angle in [0,90,180,270]:
             for flip in ['n','h','v','hv']:
-                    inputImg.show()
                     inputImg = inputImg.rotate(angle)
-                    if('h' in flip):
-                        inputImg = ImageOps.flip(inputImg)
                     if('v' in flip):
+                        inputImg = ImageOps.flip(inputImg)
+                    if('h' in flip):
                         inputImg = ImageOps.mirror(inputImg)
-                    inputImg.show()
+                    inputImg.save('{}'.format(str(angle)+'_'+flip+'_'+fi)) 
                     dic = loadjson(pathJson)
                     reg = dic[fi]
                     #converting rois
@@ -261,7 +261,7 @@ def obtainInOut (pathImg, pathJson):
                       # print(str(angle)+flip)
                       # print(coordpre)
                       # print(coord)
-                      im1.save({}.format(str(angle)+'_'+flip+'_'+fi))    
+                      im1.save('{}'.format(str(r)+'_'+str(angle)+'_'+flip+'_'+fi))    
                     
                     yresult = np.asarray(circ,dtype='float32')
                     Yout.append(yresult)
