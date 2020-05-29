@@ -12,6 +12,8 @@ models: best trained models.
 
 scripts: useful functions and special architecture definitions.
 
+mmdet needs to be installed first. so if it is already installed in you computer, the installation lines in the notebooks can be commented.
+
 Training.ipynb: Notebook that shows how the system is trained.
 
   google colab : https://colab.research.google.com/drive/10dlwMwB8OMHbGxk9sX7qcR9EYfyDQI0U?usp=sharing
