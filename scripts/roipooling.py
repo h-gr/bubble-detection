@@ -198,7 +198,6 @@ def obtainInOut (pathImg, pathJson):
         print(fi)
         for angle in [0,90]:
             for flip in ['n','h','v','hv']:
-              if(not(angle==180 and  flip = 'hv')):
                     inputImg=Image.open(pathImg + fi)
                     inputImg = inputImg.rotate(angle)
                     if('v' in flip):
