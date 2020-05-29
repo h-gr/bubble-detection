@@ -134,7 +134,8 @@ def loadjson(path):
 
 
 import numpy as np# Define parameters
-from PIL import Image
+from PIL import Image, ImageOps
+
 import tensorflow as tf
 import os
 
@@ -170,8 +171,132 @@ def obtainROI(img, result):
     return Xout, resulta
     
 
+from math import sin, cos, radians
 
-def obtainInOut (pathImg, pathJson):
+def rotate_point(point, angle, center_point=(0, 0)):
+    """Rotates a point around center_point(origin by default)
+    Angle is in degrees.
+    Rotation is counter-clockwise
+    """
+    angle_rad = radians(angle % 360)
+    # Shift the point so that center_point becomes the origin
+    new_point = (point[0] - center_point[0], point[1] - center_point[1])
+    new_point = (new_point[0] * cos(angle_rad) - new_point[1] * sin(angle_rad),
+                 new_point[0] * sin(angle_rad) + new_point[1] * cos(angle_rad))
+    # Reverse the shifting we have done
+    new_point = (new_point[0] + center_point[0], new_point[1] + center_point[1])
+    return new_point
+
+
+def obtainInOut (pathImg, pathJson,Flip=True,Rotate=True):
+  
+  Xout = []
+  Xcoordout = []
+  Yout = []
+  arr = os.listdir(pathImg)
+  for fi in arr:
+      if("png" in fi):
+        inputImg=Image.open(pathImg + fi)
+        for angle in [0,90,180,270]:
+            for flip in ['n','h','v','hv']
+                    print(angle)
+                    print(flip)
+                    inputImg.show()
+                    inputImg = inputImg.rotate(angle)
+                    if('h' in flip)
+                        inputImg = ImageOps.flip(inputImg)
+                    if('v' in flip)
+                        inputImg = ImageOps.mirror(inputImg)
+                    inputImg.show()
+                    dic = loadjson(pathJson)
+                    reg = dic[fi]
+                    #converting rois
+                    rect = []
+                    circ = []
+                    for r in reg:
+                      rtgd = r['rectangular']
+                      xmin = rtgd['x']
+                      xmax = rtgd['x']+rtgd['width']
+                      ymin = rtgd['y']
+                      ymax = rtgd['y']+rtgd['height']
+                      coord = np.asarray([ymin,xmin,ymax,xmax], dtype='float32')
+                      print(coord)
+                      #data augmentation
+                      (xmin,ymin) = rotate_point((xmin, ymin), angle, (64, 64))
+                      (xmax,ymax) = rotate_point((xmax, ymax), angle, (64, 64))
+                      if('h' in flip)
+                        xmin = 128 - xmin
+                        xmax = 128 - xmax
+                      if('v' in flip)
+                        ymin = 128 - ymin
+                        ymax = 128 - ymax
+                      
+                      coord = np.asarray([ymin,xmin,ymax,xmax], dtype='float32')
+                      print(coord)
+                      rect.append(coord/128)
+
+                      crcd = r['circular']
+                      xc=crcd['cx']
+                      yc=crcd['cy']
+                      r=crcd['r']
+                      (xc,yc) = rotate_point((xc, yc), angle, (64, 64))
+                      if('h' in flip)
+                        xc = 128 - xc
+                      if('v' in flip)
+                        yc = 128 - yc
+                      coordc = np.asarray([xc,yc,r], dtype='float32')
+                      circ.append(coordc)
+
+                    yresult = np.asarray(circ,dtype='float32')
+                    Yout.append(yresult)
+
+                    xresult = np.asarray(rect,dtype='float32')*128
+                    Xcoordout.append(xresult)
+
+                    rectarr = np.asarray([rect],dtype='float32')
+
+                    #print(rectarr)
+
+                    batch_size = 1
+                    img_height = 128
+                    img_width = 128
+                    n_channels = 3
+                    n_rois = len(reg)
+                    pooled_height = 10
+                    pooled_width = 10# Create feature map input
+                    feature_maps_shape = (batch_size, img_height, img_width, n_channels)
+                    
+                    feature_maps_np = np.asarray([np.asarray(inputImg)],dtype='float32')
+                    #print(f"feature_maps_np.shape = {feature_maps_np.shape}")# Create batch size
+                    
+                    roiss_np = rectarr
+                    #print(f"roiss_np.shape = {roiss_np.shape}")# Create layer
+                    roi_layer = ROIPoolingLayer(pooled_height, pooled_width)
+                    #print(f"output shape of layer call = {pooled_features.shape}")# Run tensorflow session
+                    result = roi_layer([feature_maps_np, roiss_np])
+                    Xout.append(result[0,:,:,:,:])
+
+                    # print(f"result.shape = {result.shape}")
+                    for i in range(n_rois):
+                      print(i)
+                      print(f"first  roi embedding=\n{np.mean(result[0,i,:,:,:], axis=2)}")
+                      img = np.mean(result[0,i,:,:,:], axis=2)
+                      print(img.shape)
+                      img = image.fromarray(np.uint8(img), 'l')
+                      img = img.resize((100,100))
+                      img.save('{}.png'.format(fi+i+str(angle)+flip))
+
+                      xx = rectarr[0][i]*128
+                      print(xx[2]-xx[0])
+                      print(xx[3]-xx[1])
+                      im1 = inputimg.crop((xx[1], xx[0], xx[3], xx[2])) 
+                      im1.save('crop{}.png'.format(fi+i+str(angle)+flip)
+  Xout = np.concatenate( Xout, axis=0 )
+  Yout = np.concatenate( Yout, axis=0 )
+  Xcoordout = np.concatenate( Xcoordout, axis=0 )
+  return Xout, Yout, Xcoordout
+  
+def obtainInOutCrop (pathImg, pathJson):
   Xout = []
   Xcoordout = []
   Yout = []
@@ -199,6 +324,13 @@ def obtainInOut (pathImg, pathJson):
           r=crcd['r']
           coordc = np.asarray([xc,yc,r], dtype='float32')
           circ.append(coordc)
+          
+          im1 = inputImg.crop((xmin, ymin, xmax, ymax)) 
+          # im1.save('crop{}.png'.format(fi))
+          new_size = (10,10)
+          im1 = im1.resize(new_size)
+          # im1.save('res{}.png'.format(fi))
+          Xout.append([np.asarray(im1)])
 
         yresult = np.asarray(circ,dtype='float32')
         Yout.append(yresult)
@@ -206,44 +338,6 @@ def obtainInOut (pathImg, pathJson):
         xresult = np.asarray(rect,dtype='float32')*128
         Xcoordout.append(xresult)
 
-        rectarr = np.asarray([rect],dtype='float32')
-
-        #print(rectarr)
-
-        batch_size = 1
-        img_height = 128
-        img_width = 128
-        n_channels = 3
-        n_rois = len(reg)
-        pooled_height = 10
-        pooled_width = 10# Create feature map input
-        feature_maps_shape = (batch_size, img_height, img_width, n_channels)
-        
-        feature_maps_np = np.asarray([np.asarray(inputImg)],dtype='float32')
-        #print(f"feature_maps_np.shape = {feature_maps_np.shape}")# Create batch size
-        
-        roiss_np = rectarr
-        #print(f"roiss_np.shape = {roiss_np.shape}")# Create layer
-        roi_layer = ROIPoolingLayer(pooled_height, pooled_width)
-        #print(f"output shape of layer call = {pooled_features.shape}")# Run tensorflow session
-        result = roi_layer([feature_maps_np, roiss_np])
-        Xout.append(result[0,:,:,:,:])
-
-        # print(f"result.shape = {result.shape}")
-        # for i in range(24):
-        #   print(i)
-        #   print(f"first  roi embedding=\n{np.mean(result[0,i,:,:,:], axis=2)}")
-        #   img = np.mean(result[0,i,:,:,:], axis=2)
-        #   print(img.shape)
-        #   img = Image.fromarray(np.uint8(img), 'L')
-        #   img = img.resize((200,200))
-        #   img.save('{}.png'.format(i))
-
-        #   xx = rectarr[0][i]*128
-        #   print(xx[2]-xx[0])
-        #   print(xx[3]-xx[1])
-        #   im1 = inputImg.crop((xx[1], xx[0], xx[3], xx[2])) 
-        #   im1.save('crop{}.png'.format(i))
   Xout = np.concatenate( Xout, axis=0 )
   Yout = np.concatenate( Yout, axis=0 )
   Xcoordout = np.concatenate( Xcoordout, axis=0 )
