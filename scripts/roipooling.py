@@ -188,8 +188,7 @@ def rotate_point(point, angle, center_point=(0, 0)):
     return new_point
 
 
-def obtainInOut (pathImg, pathJson,Flip=True,Rotate=True):
-  
+def obtainInOut (pathImg, pathJson):
   Xout = []
   Xcoordout = []
   Yout = []
@@ -198,14 +197,12 @@ def obtainInOut (pathImg, pathJson,Flip=True,Rotate=True):
       if("png" in fi):
         inputImg=Image.open(pathImg + fi)
         for angle in [0,90,180,270]:
-            for flip in ['n','h','v','hv']
-                    print(angle)
-                    print(flip)
+            for flip in ['n','h','v','hv']:
                     inputImg.show()
                     inputImg = inputImg.rotate(angle)
-                    if('h' in flip)
+                    if('h' in flip):
                         inputImg = ImageOps.flip(inputImg)
-                    if('v' in flip)
+                    if('v' in flip):
                         inputImg = ImageOps.mirror(inputImg)
                     inputImg.show()
                     dic = loadjson(pathJson)
@@ -219,20 +216,27 @@ def obtainInOut (pathImg, pathJson,Flip=True,Rotate=True):
                       xmax = rtgd['x']+rtgd['width']
                       ymin = rtgd['y']
                       ymax = rtgd['y']+rtgd['height']
-                      coord = np.asarray([ymin,xmin,ymax,xmax], dtype='float32')
-                      print(coord)
+                      coordpre = np.asarray([ymin,xmin,ymax,xmax], dtype='float32')
+                      #print("before aug")
                       #data augmentation
                       (xmin,ymin) = rotate_point((xmin, ymin), angle, (64, 64))
                       (xmax,ymax) = rotate_point((xmax, ymax), angle, (64, 64))
-                      if('h' in flip)
+                      if('h' in flip):
                         xmin = 128 - xmin
                         xmax = 128 - xmax
-                      if('v' in flip)
+                      if('v' in flip):
                         ymin = 128 - ymin
                         ymax = 128 - ymax
                       
+                      if((xmin<0 or xmax > 128) or (ymin<0 or ymax > 128)):
+                        
+                        print(coordpre)
+                        print(coord)
+                        print(angle)
+                        print(flip)
+                      
                       coord = np.asarray([ymin,xmin,ymax,xmax], dtype='float32')
-                      print(coord)
+                      #print("after aug")
                       rect.append(coord/128)
 
                       crcd = r['circular']
@@ -240,13 +244,16 @@ def obtainInOut (pathImg, pathJson,Flip=True,Rotate=True):
                       yc=crcd['cy']
                       r=crcd['r']
                       (xc,yc) = rotate_point((xc, yc), angle, (64, 64))
-                      if('h' in flip)
+                      if('h' in flip):
                         xc = 128 - xc
-                      if('v' in flip)
+                      if('v' in flip):
                         yc = 128 - yc
                       coordc = np.asarray([xc,yc,r], dtype='float32')
                       circ.append(coordc)
-
+                      
+                      im1 = inputImg.crop((xmin, ymin, xmax, ymax))
+                      im1.save('crop{}.png'.format(fi+str(r)+'_'+str(angle)+'_'+flip))     
+                    
                     yresult = np.asarray(circ,dtype='float32')
                     Yout.append(yresult)
 
@@ -276,21 +283,6 @@ def obtainInOut (pathImg, pathJson,Flip=True,Rotate=True):
                     result = roi_layer([feature_maps_np, roiss_np])
                     Xout.append(result[0,:,:,:,:])
 
-                    # print(f"result.shape = {result.shape}")
-                    for i in range(n_rois):
-                      print(i)
-                      print(f"first  roi embedding=\n{np.mean(result[0,i,:,:,:], axis=2)}")
-                      img = np.mean(result[0,i,:,:,:], axis=2)
-                      print(img.shape)
-                      img = image.fromarray(np.uint8(img), 'l')
-                      img = img.resize((100,100))
-                      img.save('{}.png'.format(fi+i+str(angle)+flip))
-
-                      xx = rectarr[0][i]*128
-                      print(xx[2]-xx[0])
-                      print(xx[3]-xx[1])
-                      im1 = inputimg.crop((xx[1], xx[0], xx[3], xx[2])) 
-                      im1.save('crop{}.png'.format(fi+i+str(angle)+flip)
   Xout = np.concatenate( Xout, axis=0 )
   Yout = np.concatenate( Yout, axis=0 )
   Xcoordout = np.concatenate( Xcoordout, axis=0 )
