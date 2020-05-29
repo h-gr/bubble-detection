@@ -194,7 +194,7 @@ def obtainInOut (pathImg, pathJson):
   Yout = []
   arr = os.listdir(pathImg)
   for fi in arr:
-      if("frame543.png" in fi):
+      if("png" in fi):
         print(fi)
         for angle in [0,90]:
             for flip in ['n','h','v','hv']:
