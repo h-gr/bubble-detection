@@ -194,11 +194,12 @@ def obtainInOut (pathImg, pathJson):
   Yout = []
   arr = os.listdir(pathImg)
   for fi in arr:
-      if("png" in fi):
-        inputImg=Image.open(pathImg + fi)
+      if("frame543.png" in fi):
         print(fi)
-        for angle in [0,90,180,270]:
+        for angle in [0,90]:
             for flip in ['n','h','v','hv']:
+              if(not(angle==180 and  flip = 'hv')):
+                    inputImg=Image.open(pathImg + fi)
                     inputImg = inputImg.rotate(angle)
                     if('v' in flip):
                         inputImg = ImageOps.flip(inputImg)
@@ -219,8 +220,8 @@ def obtainInOut (pathImg, pathJson):
                       coordpre = np.asarray([ymin,xmin,ymax,xmax], dtype='float32')
                       #print("before aug")
                       #data augmentation
-                      (xmin,ymin) = rotate_point((xmin, ymin), angle, (64, 64))
-                      (xmax,ymax) = rotate_point((xmax, ymax), angle, (64, 64))
+                      (xmin,ymin) = rotate_point((xmin, ymin), -angle, (64, 64))
+                      (xmax,ymax) = rotate_point((xmax, ymax), -angle, (64, 64))
                       if('h' in flip):
                         xmin = 128 - xmin
                         xmax = 128 - xmax
@@ -249,7 +250,7 @@ def obtainInOut (pathImg, pathJson):
                       xc=crcd['cx']
                       yc=crcd['cy']
                       r=crcd['r']
-                      (xc,yc) = rotate_point((xc, yc), angle, (64, 64))
+                      (xc,yc) = rotate_point((xc, yc), -angle, (64, 64))
                       if('h' in flip):
                         xc = 128 - xc
                       if('v' in flip):
@@ -291,6 +292,53 @@ def obtainInOut (pathImg, pathJson):
                     #print(f"output shape of layer call = {pooled_features.shape}")# Run tensorflow session
                     result = roi_layer([feature_maps_np, roiss_np])
                     Xout.append(result[0,:,:,:,:])
+
+  Xout = np.concatenate( Xout, axis=0 )
+  Yout = np.concatenate( Yout, axis=0 )
+  Xcoordout = np.concatenate( Xcoordout, axis=0 )
+  return Xout, Yout, Xcoordout
+  
+def obtainInOutCrop (pathImg, pathJson):
+  Xout = []
+  Xcoordout = []
+  Yout = []
+  arr = os.listdir(pathImg)
+  for fi in arr:
+      if("png" in fi):
+        inputImg=Image.open(pathImg + fi)
+        dic = loadjson(pathJson)
+        reg = dic[fi]
+        #converting rois
+        rect = []
+        circ = []
+        for r in reg:
+          rtgd = r['rectangular']
+          xmin = rtgd['x']
+          xmax = rtgd['x']+rtgd['width']
+          ymin = rtgd['y']
+          ymax = rtgd['y']+rtgd['height']
+          coord = np.asarray([ymin,xmin,ymax,xmax], dtype='float32')
+          rect.append(coord/128)
+
+          crcd = r['circular']
+          xc=crcd['cx']
+          yc=crcd['cy']
+          r=crcd['r']
+          coordc = np.asarray([xc,yc,r], dtype='float32')
+          circ.append(coordc)
+          
+          im1 = inputImg.crop((xmin, ymin, xmax, ymax)) 
+          # im1.save('crop{}.png'.format(fi))
+          new_size = (10,10)
+          im1 = im1.resize(new_size)
+          # im1.save('res{}.png'.format(fi))
+          Xout.append([np.asarray(im1)])
+
+        yresult = np.asarray(circ,dtype='float32')
+        Yout.append(yresult)
+
+        xresult = np.asarray(rect,dtype='float32')*128
+        Xcoordout.append(xresult)
 
   Xout = np.concatenate( Xout, axis=0 )
   Yout = np.concatenate( Yout, axis=0 )
