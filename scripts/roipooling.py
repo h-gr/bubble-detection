@@ -227,15 +227,21 @@ def obtainInOut (pathImg, pathJson):
                       if('v' in flip):
                         ymin = 128 - ymin
                         ymax = 128 - ymax
-                      
-                      if((xmin<0 or xmax > 128) or (ymin<0 or ymax > 128)):
-                        
-                        print(coordpre)
-                        print(coord)
-                        print(angle)
-                        print(flip)
-                      
+                      if(xmin>xmax):
+                        aux = xmin
+                        xmin = xmax
+                        xmax= aux
+                      if(ymin>ymax):
+                        aux = ymin
+                        ymin = ymax
+                        ymax= aux
+                      xmin = int(np.abs(xmin))
+                      xmax = int(np.abs(xmax))
+                      ymin = int(np.abs(ymin))
+                      ymax = int(np.abs(ymax))
                       coord = np.asarray([ymin,xmin,ymax,xmax], dtype='float32')
+                      
+                      
                       #print("after aug")
                       rect.append(coord/128)
 
@@ -252,7 +258,10 @@ def obtainInOut (pathImg, pathJson):
                       circ.append(coordc)
                       
                       im1 = inputImg.crop((xmin, ymin, xmax, ymax))
-                      im1.save('crop{}.png'.format(fi+str(r)+'_'+str(angle)+'_'+flip))     
+                      # print(str(angle)+flip)
+                      # print(coordpre)
+                      # print(coord)
+                      im1.save({}.format(str(angle)+'_'+flip+'_'+fi))    
                     
                     yresult = np.asarray(circ,dtype='float32')
                     Yout.append(yresult)
