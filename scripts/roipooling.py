@@ -181,7 +181,7 @@ def obtainROICrop(img, result):
     resulta = np.array(result)
     Xout = []
     for res in result:
-        im1 = inputImg.crop((result[1], result[0], result[3], result[2])) 
+        im1 = inputImg.crop((res[1], res[0], res[3], res[2])) 
         new_size = (10,10)
         im1 = im1.resize(new_size)
         Xout.append([np.asarray(im1)])
