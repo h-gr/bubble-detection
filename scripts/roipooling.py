@@ -216,6 +216,8 @@ def obtainInOut (pathImg, pathJson):
         print(fi)
         for angle in [0,90]:
             for flip in ['n','h','v','hv']:
+              #cropping for data augm
+              for cr in ['n','ha','hb','va','vb','hava','havb','hbva','hbvb']:
                 inputImg=Image.open(pathImg + fi)
                 inputImg = inputImg.rotate(angle)
                 if('v' in flip):
@@ -257,11 +259,7 @@ def obtainInOut (pathImg, pathJson):
                   xmax = int(np.abs(xmax))
                   ymin = int(np.abs(ymin))
                   ymax = int(np.abs(ymax))
-                  coord = np.asarray([ymin,xmin,ymax,xmax], dtype='float32')
                   
-                  
-                  #print("after aug")
-                  rect.append(coord/128)
 
                   crcd = r['circular']
                   xc=crcd['cx']
@@ -272,14 +270,52 @@ def obtainInOut (pathImg, pathJson):
                     xc = 128 - xc
                   if('v' in flip):
                     yc = 128 - yc
-                  coordc = np.asarray([xc,yc,r], dtype='float32')
-                  circ.append(coordc)
+                    
+                  #cropping
+                  crop = 0
+                  lim=20
+                  if 'n' == cr: 
+                    crop =1
+                  if 'ha' == cr and xc+r < 128 and xmax - xmin > lim:
+                    xmin = (xmin + xmax)/2
+                    crop =1
+                  if 'hb' == cr and xc-r > 0 and xmax - xmin > lim:
+                    xmax = (xmin + xmax)/2
+                    crop =1
+                  if 'va' == cr and yc+r < 128 and ymax - ymin > lim:
+                    ymin = (ymin + ymax)/2
+                    crop =1
+                  if 'vb' == cr and yc-r > 0 and ymax - ymin > lim:
+                    ymax = (ymin + ymax)/2
+                    crop =1
+                  if 'hava' == cr and (xc+r < 128 and yc+r < 128) and (xmax - xmin > lim) and (ymax - ymin > lim):
+                    xmin = (xmin + xmax)/2
+                    ymin = (ymin + ymax)/2
+                    crop =1
+                  if 'havb' == cr and (xc+r < 128 and yc-r >0 ) and (xmax - xmin > lim) and (ymax - ymin > lim):
+                    xmin = (xmin + xmax)/2
+                    ymax = (ymin + ymax)/2
+                    crop =1
+                  if 'hbva' == cr and (xc-r > 0 and yc+r < 128) and (xmax - xmin > lim) and (ymax - ymin > lim):
+                    xmax = (xmin + xmax)/2
+                    ymin = (ymin + ymax)/2
+                    crop =1
+                  if 'hbvb' == cr and (xc-r > 0 and yc-r > 0) and (xmax - xmin > lim) and (ymax - ymin > lim):
+                    xmax = (xmin + xmax)/2
+                    ymax = (ymin + ymax)/2
+                    crop =1
                   
-                  im1 = inputImg.crop((xmin, ymin, xmax, ymax))
-                  # print(str(angle)+flip)
-                  # print(coordpre)
-                  # print(coord)
-                  #im1.save('{}'.format(str(r)+'_'+str(angle)+'_'+flip+'_'+fi))    
+                  if crop ==1:
+                      coord = np.asarray([ymin,xmin,ymax,xmax], dtype='float32')
+                      rect.append(coord/128)
+                      coordc = np.asarray([xc,yc,r], dtype='float32')
+                      circ.append(coordc)
+                      
+                      im1 = inputImg.crop((xmin, ymin, xmax, ymax))
+                      # print(str(angle)+flip)
+                      # print(coordpre)
+                      # print(coord)
+                      #im1.save('{}'.format(str(r)+'_'+str(angle)+'_'+flip+'_'+fi))    
                 
                 yresult = np.asarray(circ,dtype='float32')
                 Yout.append(yresult)
