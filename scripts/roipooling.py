@@ -141,7 +141,7 @@ import os
 
 #tf.disable_v2_behavior()
 
-def obtainROI(img, result):
+def obtainROI(img, result, normalize = False):
     inputImg=Image.open(img)
     result = result[0]
     result = result[result[:,4]>0.95]
@@ -150,6 +150,9 @@ def obtainROI(img, result):
     result = result[:,inx]
 
     resulta = np.array(result)
+    if normalize:
+        resulta = resulta/128
+    
     results = np.array([result])
 
     #compute ROIs
@@ -170,7 +173,7 @@ def obtainROI(img, result):
     Xout = np.concatenate( result, axis=0 )
     return Xout, resulta
 
-def obtainROICrop(img, result):
+def obtainROICrop(img, result, normalize= False):
     inputImg=Image.open(img)
     result = result[0]
     result = result[result[:,4]>0.95]
@@ -179,6 +182,8 @@ def obtainROICrop(img, result):
     result = result[:,inx]
 
     resulta = np.array(result)
+    if normalize:
+        resulta = resulta/128
     Xout = []
     for res in result:
         im1 = inputImg.crop((res[1], res[0], res[3], res[2])) 
@@ -206,7 +211,7 @@ def rotate_point(point, angle, center_point=(0, 0)):
     return new_point
 
 
-def obtainInOut (pathImg, pathJson):
+def obtainInOut (pathImg, pathJson, normalize = False):
   Xout = []
   Xcoordout = []
   Yout = []
@@ -308,6 +313,10 @@ def obtainInOut (pathImg, pathJson):
                   if crop ==1:
                       coord = np.asarray([ymin,xmin,ymax,xmax], dtype='float32')
                       rect.append(coord/128)
+                      if normalize:
+                        xc = xc/128
+                        xy = xy/128
+                        r = r/30
                       coordc = np.asarray([xc,yc,r], dtype='float32')
                       circ.append(coordc)
                       
@@ -321,6 +330,8 @@ def obtainInOut (pathImg, pathJson):
                 Yout.append(yresult)
 
                 xresult = np.asarray(rect,dtype='float32')*128
+                if normalize:
+                    xresult = xresult/128
                 Xcoordout.append(xresult)
 
                 rectarr = np.asarray([rect],dtype='float32')
@@ -451,6 +462,11 @@ def obtainInOutCrop (pathImg, pathJson):
                       coord = np.asarray([ymin,xmin,ymax,xmax], dtype='float32')
                       rect.append(coord/128)
                       
+                      if normalize:
+                        xc = xc/128
+                        xy = xy/128
+                        r = r/30
+                      
                       coordc = np.asarray([xc,yc,r], dtype='float32')
                       circ.append(coordc)
                       
@@ -466,6 +482,8 @@ def obtainInOutCrop (pathImg, pathJson):
                 Yout.append(yresult)
 
                 xresult = np.asarray(rect,dtype='float32')*128
+                if normalize:
+                    xresult = xresult/128
                 Xcoordout.append(xresult)
 
   Xout = np.concatenate( Xout, axis=0 )
