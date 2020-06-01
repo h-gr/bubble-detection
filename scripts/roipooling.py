@@ -325,7 +325,7 @@ def obtainInOutCrop (pathImg, pathJson):
         for angle in [0,90]:
             for flip in ['n','h','v','hv']:
                 #cropping for data augm
-              for cr in ['n','h','v','hv']:
+              for cr in ['n','ha','hb','va','vb','hava','havb','hbva','hbvb']:
                 inputImg=Image.open(pathImg + fi)
                 inputImg = inputImg.rotate(angle)
                 if('v' in flip):
@@ -381,15 +381,33 @@ def obtainInOutCrop (pathImg, pathJson):
                   crop = 0
                   if 'n' == cr: 
                     crop =1
-                  if 'h' == cr and xc+r < 128 and xmax - xmin > 15:
+                  if 'ha' == cr and xc+r < 128 and xmax - xmin > 15:
                     xmin = (xmin + xmax)/2
                     crop =1
-                  if 'v' == cr and yc+r < 128 and ymax - ymin > 15:
+                  if 'hb' == cr and xc-r > 0 and xmax - xmin > 15:
+                    xmax = (xmin + xmax)/2
+                    crop =1
+                  if 'va' == cr and yc+r < 128 and ymax - ymin > 15:
                     ymin = (ymin + ymax)/2
                     crop =1
-                  if 'hv' == cr and (xc+r < 128 and yc+r < 128) and (xmax - xmin > 15) and (ymax - ymin > 15):
+                  if 'vb' == cr and yc-r > 0 and ymax - ymin > 15:
+                    ymax = (ymin + ymax)/2
+                    crop =1
+                  if 'hava' == cr and (xc+r < 128 and yc+r < 128) and (xmax - xmin > 15) and (ymax - ymin > 15):
                     xmin = (xmin + xmax)/2
                     ymin = (ymin + ymax)/2
+                    crop =1
+                  if 'havb' == cr and (xc+r < 128 and yc-r >0 ) and (xmax - xmin > 15) and (ymax - ymin > 15):
+                    xmin = (xmin + xmax)/2
+                    ymax = (ymin + ymax)/2
+                    crop =1
+                  if 'hbva' == cr and (xc-r > 0 and yc+r < 128) and (xmax - xmin > 15) and (ymax - ymin > 15):
+                    xmax = (xmin + xmax)/2
+                    ymin = (ymin + ymax)/2
+                    crop =1
+                  if 'hbvb' == cr and (xc-r > 0 and yc-r > 0) and (xmax - xmin > 15) and (ymax - ymin > 15):
+                    xmax = (xmin + xmax)/2
+                    ymax = (ymin + ymax)/2
                     crop =1
                   
                   if crop ==1:
