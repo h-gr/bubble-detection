@@ -315,7 +315,7 @@ def obtainInOut (pathImg, pathJson, normalize = False):
                       rect.append(coord/128)
                       if normalize:
                         xc = xc/128
-                        xy = xy/128
+                        yc = yc/128
                         r = r/30
                       coordc = np.asarray([xc,yc,r], dtype='float32')
                       circ.append(coordc)
@@ -464,7 +464,7 @@ def obtainInOutCrop (pathImg, pathJson, normalize=False):
                       
                       if normalize:
                         xc = xc/128
-                        xy = xy/128
+                        yc = xc/128
                         r = r/30
                       
                       coordc = np.asarray([xc,yc,r], dtype='float32')
