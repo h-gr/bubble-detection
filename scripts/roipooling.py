@@ -362,7 +362,7 @@ def obtainInOut (pathImg, pathJson, normalize = False):
   Xcoordout = np.concatenate( Xcoordout, axis=0 )
   return Xout, Yout, Xcoordout
   
-def obtainInOutCrop (pathImg, pathJson):
+def obtainInOutCrop (pathImg, pathJson, normalize=False):
   Xout = []
   Xcoordout = []
   Yout = []
