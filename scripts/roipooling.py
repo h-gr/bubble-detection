@@ -377,26 +377,34 @@ def obtainInOutCrop (pathImg, pathJson):
                     
                   #cropping for data augm
                   for cr in ['n','h','v','hv']
-                      if 'h' == cr and xc+r < 128:
+                      crop = 0
+                      if 'n' == cr: 
+                        crop =1
+                      if 'h' == cr and xc+r < 128 and xmax - xmin > 10:
                         xmin = (xmin + xmax)/2
-                      if 'v' == cr and yc+r < 128:
+                        crop =1
+                      if 'v' == cr and yc+r < 128 and ymax - ymin > 10:
                         ymin = (ymin + ymax)/2
-                      if 'hv' == cr and (xc+r < 128 and yc+r < 128):
+                        crop =1
+                      if 'hv' == cr and (xc+r < 128 and yc+r < 128) and (xmax - xmin > 10) and (ymax - ymin > 10):
                         xmin = (xmin + xmax)/2
                         ymin = (ymin + ymax)/2
-                      coord = np.asarray([ymin,xmin,ymax,xmax], dtype='float32')
-                      rect.append(coord/128)
+                        crop =1
                       
-                      coordc = np.asarray([xc,yc,r], dtype='float32')
-                      circ.append(coordc)
-                      
-                      
-                      im1 = inputImg.crop((xmin, ymin, xmax, ymax)) 
-                      im1.save('crop{}.png'.format(fi+cr))
-                      new_size = (10,10)
-                      im1 = im1.resize(new_size)
-                      im1.save('res{}.png'.format(fi+cr))
-                      Xout.append([np.asarray(im1)])
+                      if crop ==1:
+                          coord = np.asarray([ymin,xmin,ymax,xmax], dtype='float32')
+                          rect.append(coord/128)
+                          
+                          coordc = np.asarray([xc,yc,r], dtype='float32')
+                          circ.append(coordc)
+                          
+                          
+                          im1 = inputImg.crop((xmin, ymin, xmax, ymax)) 
+                          im1.save('crop{}.png'.format(fi+cr))
+                          new_size = (10,10)
+                          im1 = im1.resize(new_size)
+                          im1.save('res{}.png'.format(fi+cr))
+                          Xout.append([np.asarray(im1)])
 
                 yresult = np.asarray(circ,dtype='float32')
                 Yout.append(yresult)
