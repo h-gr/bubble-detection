@@ -326,7 +326,6 @@ def obtainInOutCrop (pathImg, pathJson):
             for flip in ['n','h','v','hv']:
                 #cropping for data augm
               for cr in ['n','h','v','hv']:
-                crop = 0
                 inputImg=Image.open(pathImg + fi)
                 inputImg = inputImg.rotate(angle)
                 if('v' in flip):
@@ -379,15 +378,16 @@ def obtainInOutCrop (pathImg, pathJson):
                     yc = 128 - yc
                     
                   #cropping
+                  crop = 0
                   if 'n' == cr: 
                     crop =1
-                  if 'h' == cr and xc+r < 128 and xmax - xmin > 10:
+                  if 'h' == cr and xc+r < 128 and xmax - xmin > 15:
                     xmin = (xmin + xmax)/2
                     crop =1
-                  if 'v' == cr and yc+r < 128 and ymax - ymin > 10:
+                  if 'v' == cr and yc+r < 128 and ymax - ymin > 15:
                     ymin = (ymin + ymax)/2
                     crop =1
-                  if 'hv' == cr and (xc+r < 128 and yc+r < 128) and (xmax - xmin > 10) and (ymax - ymin > 10):
+                  if 'hv' == cr and (xc+r < 128 and yc+r < 128) and (xmax - xmin > 15) and (ymax - ymin > 15):
                     xmin = (xmin + xmax)/2
                     ymin = (ymin + ymax)/2
                     crop =1
