@@ -173,8 +173,11 @@ def obtainROI(img, result, normalize = False):
     Xout = np.concatenate( result, axis=0 )
     return Xout, resulta
 
-def obtainROICrop(img, result, normalize= False):
-    inputImg=Image.open(img)
+def obtainROICrop(img, result, normalize= False, imgobj = None):
+    if imgobj is not None:
+        inputImg = Image.fromarray(imgobj)
+    else:
+        inputImg=Image.open(img)
     result = result[0]
     result = result[result[:,4]>0.95]
     result = result[:,:4]

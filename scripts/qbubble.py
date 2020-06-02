@@ -89,7 +89,7 @@ def qbubbleDraw(v, w, h, t = 0):
             if (x >= 0) and (x < w) and (y >= 0) and (y < h): c[y, x] = 1
     return(np.transpose(np.array(np.where(c == 1))))
 
-def qbubblePlot(lv, img, s = 1, t = 0, f = None):
+def qbubblePlot(lv, img, s = 1, t = 0, f = None, filename = 'out'):
     # lv: list of contours' parameters
     # s: zoom factor, must be a positive integer
     # t: increased thichness of the dispayed lines
@@ -116,7 +116,7 @@ def qbubblePlot(lv, img, s = 1, t = 0, f = None):
     for v in lv:
         for (y, x) in qbubbleDraw(s*v, s*w, s*h, t = t): tmp[y, x] = [0, 1, 0]
     # Save the output image
-    mpimg.imsave('out.jpg',tmp)
+    mpimg.imsave(filename+'.jpg',tmp)
     # Display the output image
     plt.imshow(tmp)
     plt.pause(0.01)
