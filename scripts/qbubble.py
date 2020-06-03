@@ -76,6 +76,20 @@ def qbubbleIoU(v1, v2, w, h):
     else: iou = 0
     return(iou)
 
+
+def qbubbleIoUsSquare(lv1, coord, w, h):
+    iou = []
+    for i in range(len(lv1)):
+        inside1 = qbubbleImageInside(lv1[i], w, h)
+        inside2 = np.zeros((h, w), dtype = 'uint8')
+        for y in range (coord[0],coord[2]+1):
+            for x in range (coord[1],coord[3]+1):
+                inside2[x][y]=1
+        u = np.sum(np.logical_or(inside1, inside2))
+        if (u > 0): iou.append(np.sum(np.logical_and(inside1, inside2))/u)
+        else: iou.append(0)
+    return(iou)
+    
 def qbubbleIoUs(lv1, lv2, w, h):
     # Compute IoUs between delimited regions
     iou = []

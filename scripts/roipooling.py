@@ -141,8 +141,11 @@ import os
 
 #tf.disable_v2_behavior()
 
-def obtainROI(img, result, normalize = False):
-    inputImg=Image.open(img)
+def obtainROI(img, result, normalize = False, imgobj = None):
+    if imgobj is not None:
+        inputImg = Image.fromarray(imgobj)
+    else:
+        inputImg=Image.open(img)
     result = result[0]
     result = result[result[:,4]>0.95]
     result = result[:,:4]
@@ -214,7 +217,7 @@ def rotate_point(point, angle, center_point=(0, 0)):
     return new_point
 
 
-def obtainInOut (pathImg, pathJson, normalize = False):
+def obtainInOut (pathImg, pathJson, normalize = False, rmul = 1):
   Xout = []
   Xcoordout = []
   Yout = []
@@ -320,7 +323,7 @@ def obtainInOut (pathImg, pathJson, normalize = False):
                         xc = xc/128
                         yc = yc/128
                         r = r/30
-                      coordc = np.asarray([xc,yc,r], dtype='float32')
+                      coordc = np.asarray([xc,yc,r*rmul], dtype='float32')
                       circ.append(coordc)
                       
                       im1 = inputImg.crop((xmin, ymin, xmax, ymax))
@@ -365,7 +368,7 @@ def obtainInOut (pathImg, pathJson, normalize = False):
   Xcoordout = np.concatenate( Xcoordout, axis=0 )
   return Xout, Yout, Xcoordout
   
-def obtainInOutCrop (pathImg, pathJson, normalize=False):
+def obtainInOutCrop (pathImg, pathJson, normalize=False, rmul = 1):
   Xout = []
   Xcoordout = []
   Yout = []
@@ -470,7 +473,7 @@ def obtainInOutCrop (pathImg, pathJson, normalize=False):
                         yc = yc/128
                         r = r/30
                       
-                      coordc = np.asarray([xc,yc,r], dtype='float32')
+                      coordc = np.asarray([xc,yc,r*rmul], dtype='float32')
                       circ.append(coordc)
                       
                       
