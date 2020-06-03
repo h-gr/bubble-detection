@@ -10,6 +10,22 @@ from scipy import interpolate as inpo
 from scipy import signal
 import scipy.ndimage.filters
 import time
+from skimage import measure
+
+def qbubbleLabels(mask):
+    return(measure.label(mask, background=0))
+
+def qbubbleLabelAreas(labels):
+    nl = labels.max()
+    return(list(np.histogram(labels, bins = nl, range = (0.5, nl+0.5))[0]))
+
+def qbubbleLabelsContours(labels):
+    # Makes a list of contours from an image of labeled (numbered) regions
+    lv = []
+    for i in range(np.max(labels)):
+        inside = np.equal(labels,i+1)
+        lv.append(qbubbleInsideContour(inside))
+    return(lv)
 
 def qbubbleSplit(v):
     # Order in v is: xc, yc, a0, a1, a2, ..., aI, b1, b2, ..., bI
@@ -19,14 +35,14 @@ def qbubbleSplit(v):
 
 def qbubblePointInside(v, x, y, m = 0):
     # Tells whether a point is inside a contour spline with a margin of m pixels
-    (xc, yc, r, a, b, I) = qbubbleSplit(v)
+    xc, yc, r, a, b, I = qbubbleSplit(v)
     t = math.atan2(y-yc, x-xc)
     for i in range(0, I): r += a[i]*math.cos((i+1)*t)+b[i]*math.sin((i+1)*t)
     return((x-xc)**2+(y-yc)**2 < (r+m)**2)
 
 def qbubbleImageInside(v, w, h, m = 0):
     # Builds a boolean image of points inside a contour with a margin of m pixels
-    (xc, yc, r, a, b, I) = qbubbleSplit(v)
+    xc, yc, r, a, b, I = qbubbleSplit(v)
     dx = np.repeat(np.expand_dims((np.array(range(w))+0.5), axis = 0), h, axis = 0)-xc
     dy = np.repeat(np.expand_dims((np.array(range(h))+0.5), axis = 1), w, axis = 1)-yc
     r = np.repeat(np.expand_dims(r, axis = 0), h, axis = 0)
@@ -37,7 +53,6 @@ def qbubbleImageInside(v, w, h, m = 0):
 
 def qbubbleImageContour(inside):
     # Create a fuzzy contour image for contour spline search from a binary image
-    print(inside.shape)
     h, w = inside.shape
     x = np.repeat(np.expand_dims((np.array(range(w))+0.5), axis = 0), h, axis = 0)
     y = np.repeat(np.expand_dims((np.array(range(h))+0.5), axis = 1), w, axis = 1)
@@ -52,35 +67,77 @@ def qbubbleImageContour(inside):
     sdm_img = np.sqrt(np.square(sdx_img)+np.square(sdy_img))
     return(((1-sdm_img/np.amax(sdm_img)), xg, yg, math.sqrt(a/math.pi)))
 
-def qbubbleDrawGUI(v, w, h):
-    # Returns a list of point coordinates for drawing the contour
-    (xc, yc, a0, a, b, I) = qbubbleSplit(v)
-    n = math.ceil(4*a0*math.pi)
-    c = []
+def qbubbleIoU(v1, v2, w, h):
+    # Compute IoU between delimited regions
+    inside1 = qbubbleImageInside(v1, w, h)
+    inside2 = qbubbleImageInside(v2, w, h)
+    u = np.sum(np.logical_or(inside1, inside2))
+    if (u > 0): iou = np.sum(np.logical_and(inside1, inside2))/u 
+    else: iou = 0
+    return(iou)
+
+def qbubbleIoUs(lv1, lv2, w, h):
+    # Compute IoUs between delimited regions
+    iou = []
+    for i in range(len(lv1)):
+        inside1 = qbubbleImageInside(lv1[i], w, h)
+        inside2 = qbubbleImageInside(lv2[i], w, h)
+        u = np.sum(np.logical_or(inside1, inside2))
+        if (u > 0): iou.append(np.sum(np.logical_and(inside1, inside2))/u)
+        else: iou.append(0)
+    return(iou)
+
+def qbubbleIoULabels(labels, lv, w, h):
+    # Compute IoUs between delimited regions
+    iou = []
+    for i in range(len(lv)):
+        inside1 = np.equal(labels,i+1)
+        inside2 = qbubbleImageInside(lv[i], w, h)
+        u = np.sum(np.logical_or(inside1, inside2))
+        if (u > 0): iou.append(np.sum(np.logical_and(inside1, inside2))/u)
+        else: iou.append(0)
+    return(iou)
+
+def qbubbleArea(v, w, h):
+    # Returns the area inside a contour and inside the image
+    return(np.sum(qbubbleImageInside(v, w, h)))
+
+def qbubbleAreas(lv, w, h):
+    # Returns the areas inside contours and inside the image
+    la = []
+    for v in lv: la.append(np.sum(qbubbleImageInside(v, w, h)))
+    return(la)
+
+def qbubbleAreaF(v, m = 1):
+    # Returns the area inside a contour
+    xc, yc, a0, a, b, I = qbubbleSplit(v)
+    s, n = 0, math.ceil(2*m*a0*math.pi)
     for k in range(n):
         tt, r = 2*k*math.pi/n, a0
-        ck, sk = math.cos(tt), math.sin(tt)
-        # Contour point
-        for i in range(I):
-            r += a[i]*math.cos((i+1)*tt)+b[i]*math.sin((i+1)*tt)
-        xr, yr = xc+r*ck, yc+r*sk
-        x, y = xr+0.5*ck, yr+0.5*sk
-        x, y = int(math.floor(x)), int(math.floor(y))
-        c.append([y,x])
-    return c
+        for i in range(I): r += a[i]*math.cos((i+1)*tt)+b[i]*math.sin((i+1)*tt)
+        s += r**2
+    return(s*math.pi/n)
 
+def qbubbleTkPolygon(v, m = 1):
+    # Returns a list of point coordinates for drawing the contour
+    xc, yc, a0, a, b, I = qbubbleSplit(v)
+    p, n = [], math.ceil(2*m*a0*math.pi)
+    for k in range(n):
+        tt, r = 2*k*math.pi/n, a0
+        for i in range(I): r += a[i]*math.cos((i+1)*tt)+b[i]*math.sin((i+1)*tt)
+        p.append([yc+r*math.sin(tt),xc+r*math.cos(tt)])
+    return(p)
 
 def qbubbleDraw(v, w, h, t = 0):
     # Returns a list of point coordinates for drawing the contour
-    (xc, yc, a0, a, b, I) = qbubbleSplit(v)
+    xc, yc, a0, a, b, I = qbubbleSplit(v)
     n = math.ceil(4*a0*math.pi)
     c = np.zeros((h, w), dtype = 'float32')
     for k in range(n):
         tt, r = 2*k*math.pi/n, a0
         ck, sk = math.cos(tt), math.sin(tt)
         # Contour point
-        for i in range(I):
-            r += a[i]*math.cos((i+1)*tt)+b[i]*math.sin((i+1)*tt)
+        for i in range(I): r += a[i]*math.cos((i+1)*tt)+b[i]*math.sin((i+1)*tt)
         xr, yr = xc+r*ck, yc+r*sk
         # Thickness
         for i in range(-t, t+1):
@@ -89,7 +146,7 @@ def qbubbleDraw(v, w, h, t = 0):
             if (x >= 0) and (x < w) and (y >= 0) and (y < h): c[y, x] = 1
     return(np.transpose(np.array(np.where(c == 1))))
 
-def qbubblePlot(lv, img, s = 1, t = 0, f = None, filename = 'out'):
+def qbubblePlot(lv, img, s = 1, t = 0, f = None, raw = np.zeros(0), rv = 1, filename = 'out'):
     # lv: list of contours' parameters
     # s: zoom factor, must be a positive integer
     # t: increased thichness of the dispayed lines
@@ -110,11 +167,17 @@ def qbubblePlot(lv, img, s = 1, t = 0, f = None, filename = 'out'):
                 fg = f((i+0.5)/s, (j+0.5)/s)
                 if fg < 0: fg = 0
                 if fg > 1: fg = 1
-                for m in range(3):
-                    tmp[i, j, m] = fg
+                for m in range(3): tmp[i, j, m] = fg
     # Plot all contours
     for v in lv:
         for (y, x) in qbubbleDraw(s*v, s*w, s*h, t = t): tmp[y, x] = [0, 1, 0]
+    # Plot raw contours
+    if raw.size != 0:
+        for j in range(h):
+            for i in range(w):
+                for k in range(s):
+                    for l in range(s):
+                        if raw[j, i] == rv: tmp[s*j+k, s*i+l] = [0, 1, 0]
     # Save the output image
     mpimg.imsave(filename+'.jpg',tmp)
     # Display the output image
@@ -124,7 +187,7 @@ def qbubblePlot(lv, img, s = 1, t = 0, f = None, filename = 'out'):
 def qbubbleMaxScale(v, dv, maxmaxd):
     # Computes a scaling factor on the update so that the maximum
     # contour point displacment is bounded by maxmaxd
-    (dxc, dyc, da0, da, db, I) = qbubbleSplit(dv)
+    dxc, dyc, da0, da, db, I = qbubbleSplit(dv)
     n, maxd = math.ceil(2*v[2]*math.pi), 0
     for k in range(n):
         tt, dr = 2*k*math.pi/n, da0
@@ -138,7 +201,7 @@ def qbubbleMaxScale(v, dv, maxmaxd):
 
 def qbubbleGradient(v, f, w, h, p, lr, md, wd, ps):
     # Computes the gradient of the loss function
-    (xc, yc, a0, a, b, I) = qbubbleSplit(v)
+    xc, yc, a0, a, b, I = qbubbleSplit(v)
     n, m = math.ceil(2*a0*math.pi/ps), 0
     x, y = np.zeros(n, dtype = 'float32'), np.zeros(n, dtype = 'float32')
     for k in range(n):
@@ -261,3 +324,20 @@ def qbubbleAuto(img, b = 100, p = 0.02, mi = [500,50,20,0], hs = 5, rmin = 2):
         lv.append(v)
     print("Elapsed time: ",time.time()-t)
     return(lv)
+
+def qbubbleRefineContours(lv1, img, vb = 0):
+    h, w = img.shape
+    # Refines contours according to an image
+    f = inpo.RectBivariateSpline(np.arange(h)+0.5,np.arange(w)+0.5,img)
+    lv2 = []
+    if (vb > 0): t0 = time.time()
+    for i in range(len(lv1)):
+        if (vb > 1): t1 = time.time()
+        v = lv1[i].copy()
+        if (vb > 1): print(i, end =" ")
+        pv = v+10000
+        v, pv = qbubbleStep(v, pv, f, w, h, 0, 1, 0.001, 1, 0.0001, 200, 4, 1, 1, 1)
+        lv2.append(v)
+        if (vb > 1): print("%.2f" % (time.time()-t1))
+    if (vb > 0): print("Elapsed: ",time.time()-t0)
+    return(lv2)
