@@ -432,7 +432,7 @@ def obtainInOutCrop (pathImg, pathJson, normalize=False, rmul = 1):
                     
                   #cropping
                   crop = 0
-                  lim=20
+                  lim=30
                   if 'n' == cr: 
                     crop =1
                   if 'ha' == cr and xc+r < 128 and xmax - xmin > lim:
@@ -478,10 +478,10 @@ def obtainInOutCrop (pathImg, pathJson, normalize=False, rmul = 1):
                       
                       
                       im1 = inputImg.crop((xmin, ymin, xmax, ymax)) 
-                      im1.save('crop{}.png'.format(fi+cr))
+                      #im1.save('crop{}.png'.format(fi+cr))
                       new_size = (10,10)
                       im1 = im1.resize(new_size)
-                      im1.save('res{}.png'.format(fi+cr))
+                      #im1.save('res{}.png'.format(fi+cr))
                       Xout.append([np.asarray(im1)])
 
                 yresult = np.asarray(circ,dtype='float32')
