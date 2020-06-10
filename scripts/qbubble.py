@@ -79,11 +79,11 @@ def qbubbleIoU(v1, v2, w, h):
 
 def qbubbleIoUsSquare(lv1, coord, w, h):
     iou = []
-    for i in range(len(lv1)):
+    for i in range(len(coord)):
         inside1 = qbubbleImageInside(lv1[i], w, h)
         inside2 = np.zeros((h, w), dtype = 'uint8')
-        for y in range (coord[0],coord[2]+1):
-            for x in range (coord[1],coord[3]+1):
+        for y in range (int(coord[i][1]),int(coord[i][3])):
+            for x in range (int(coord[i][0]),int(coord[i][2])):
                 inside2[x][y]=1
         u = np.sum(np.logical_or(inside1, inside2))
         if (u > 0): iou.append(np.sum(np.logical_and(inside1, inside2))/u)
@@ -184,14 +184,14 @@ def qbubblePlot(lv, img, s = 1, t = 0, f = None, raw = np.zeros(0), rv = 1, file
                 for m in range(3): tmp[i, j, m] = fg
     # Plot all contours
     for v in lv:
-        for (y, x) in qbubbleDraw(s*v, s*w, s*h, t = t): tmp[y, x] = [0, 1, 0]
+        for (y, x) in qbubbleDraw(s*v, s*w, s*h, t = t): tmp[y, x] = [1, 0, 0]
     # Plot raw contours
     if raw.size != 0:
         for j in range(h):
             for i in range(w):
                 for k in range(s):
                     for l in range(s):
-                        if raw[j, i] == rv: tmp[s*j+k, s*i+l] = [0, 1, 0]
+                        if raw[j, i] == rv: tmp[s*j+k, s*i+l] = [1, 0, 0]
     # Save the output image
     mpimg.imsave(filename+'.jpg',tmp)
     # Display the output image
