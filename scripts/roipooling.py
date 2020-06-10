@@ -284,7 +284,7 @@ def obtainInOut (pathImg, pathJson, normalize = False, rmul = 1):
                     
                   #cropping
                   crop = 0
-                  lim=20
+                  lim=30
                   if 'n' == cr: 
                     crop =1
                   if 'ha' == cr and xc+r < 128 and xmax - xmin > lim:
